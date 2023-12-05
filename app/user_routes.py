@@ -3,6 +3,7 @@ from flask import jsonify, request
 from psycopg2.extras import RealDictCursor
 from config import connect
 from app import app
+import re
 
 # Obtener todos los usuarios
 @app.route('/users', methods=['GET'])
@@ -29,6 +30,18 @@ def get_user(user_id):
 def create_user():
     new_user = request.get_json()
     conn = connect()
+
+    if 'username' not in new_user or 'email' not in new_user or 'password' not in new_user:
+        return jsonify({'error': 'Campos incompletos'}), 400
+
+    if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', new_user['email']):
+        return jsonify({'error': 'Formato de correo electrónico inválido'}), 400
+
+    if len(new_user['password']) < 8:
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
+
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_user['password']):
+        return jsonify({'error': 'La contraseña debe contener al menos un caracter especial'}), 400
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT * FROM tellmedam_user WHERE username = %s OR email = %s;', (new_user['username'], new_user['email']))
@@ -72,3 +85,54 @@ def get_user_chats(user_id):
     conn.close()
 
     return jsonify(user_chats)
+
+# Actualizar un usuario
+@app.route('/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    updated_user = request.get_json()
+    conn = connect()
+
+    # Check id exists
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_user WHERE id = %s;', (user_id,))
+        user = cursor.fetchone()
+    if not user:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+
+    if 'username' not in updated_user or 'email' not in updated_user or 'password' not in updated_user:
+        return jsonify({'error': 'Campos incompletos'}), 400
+
+    with conn.cursor() as cursor:
+        cursor.execute('UPDATE tellmedam_user SET username = %s, email = %s, password = %s WHERE id = %s RETURNING *;',
+                       (updated_user['username'], updated_user['email'], updated_user['password'], user_id))
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT id, username, email, photourl FROM tellmedam_user WHERE username = %s OR email = %s;', (updated_user['username'], updated_user['email']))
+        updated_user = cursor.fetchone()
+
+    conn.commit()
+    conn.close()
+
+    return jsonify(updated_user)
+
+# Eliminar un usuario
+@app.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    conn = connect()
+
+    # Check id exists
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_user WHERE id = %s;', (user_id,))
+        user = cursor.fetchone()
+    if not user:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_user WHERE id = %s RETURNING *;', (user_id,))
+        deleted_user = cursor.fetchone()
+
+    conn.commit()
+    conn.close()
+
+    return jsonify(deleted_user)

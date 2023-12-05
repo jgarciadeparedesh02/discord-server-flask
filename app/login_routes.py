@@ -11,10 +11,13 @@ def login():
     if 'email' not in login_data or 'password' not in login_data:
         return jsonify({'error': 'Credenciales incompletas'}), 400
 
+    email = login_data['email']
+    password = login_data['password']
+
     conn = connect()
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT * FROM tellmedam_user WHERE email = %s AND password = %s;',
-                       (login_data['email'], login_data['password']))
+                       (email, password))
         user = cursor.fetchone()
 
         if user:

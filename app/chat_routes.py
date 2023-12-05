@@ -29,10 +29,27 @@ def get_chat(chat_id):
 def create_chat():
     new_chat = request.get_json()
     conn = connect()
+
+    if 'user1_id' not in new_chat or 'user2_id' not in new_chat:
+        return jsonify({'error': 'Campos incompletos'}), 400
+    if new_chat['user1_id'] == new_chat['user2_id']:
+        return jsonify({'error': 'Campos incompletos'}), 400
+    
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE idUser1 = %s AND idUser2 = %s;', (new_chat['user1_id'], new_chat['user2_id']))
+        existing_chat = cursor.fetchone()
+    if existing_chat:
+        return jsonify({'error': 'Ya existe un chat entre estos dos usuarios'}), 400
+
     with conn.cursor() as cursor:
-        cursor.execute('INSERT INTO tellmedam_chat (idUser1, idUser2, createdAt, updatedAt) VALUES (%s, %s, %s, %s) RETURNING *;',
-                       (new_chat['idUser1'], new_chat['idUser2'], new_chat.get('createdAt'), new_chat.get('updatedAt')))
+        cursor.execute('INSERT INTO tellmedam_chat (idUser1, idUser2) VALUES (%s, %s) RETURNING *;',
+                       (new_chat['user1_id'], new_chat['user2_id']))
         created_chat = cursor.fetchone()
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT id, idUser1, idUser2 FROM tellmedam_chat WHERE idUser1 = %s AND idUser2 = %s;', (new_chat['user1_id'], new_chat['user2_id']))
+        created_chat = cursor.fetchone()
+
     conn.commit()
     conn.close()
     return jsonify(created_chat)

@@ -37,8 +37,13 @@ def add_message(chat_id):
             INSERT INTO tellmedam_message (idSender, content, chatId)
             VALUES (%s, %s, %s) RETURNING *;
         """
+
         cursor.execute(sql_insert_message, (id_sender, content, chat_id))
         created_message = cursor.fetchone()
+
+    # Actualiza updateAt de los chats
+    with conn.cursor() as cursor:
+        cursor.execute('UPDATE tellmedam_chat SET updatedAt = NOW() WHERE id = %s;', (chat_id,))
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         print(type(created_message))
