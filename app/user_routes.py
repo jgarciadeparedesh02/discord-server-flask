@@ -51,8 +51,8 @@ def create_user():
             return jsonify({'error': 'Ya existe un usuario con el mismo username o email'}), 400
 
     with conn.cursor() as cursor:
-        cursor.execute('INSERT INTO tellmedam_user (username, email, password) VALUES (%s, %s, %s) RETURNING *;',
-                       (new_user['username'], new_user['email'], new_user['password']))
+        cursor.execute('INSERT INTO tellmedam_user (username, email, password, photourl) VALUES (%s, %s, %s) RETURNING *;',
+                       (new_user['username'], new_user['email'], new_user['password'], "https://discord-server-flask.vercel.app/images/default-image.jpg"))
         created_user = cursor.fetchone()
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -102,10 +102,13 @@ def update_user(user_id):
 
     if 'username' not in updated_user or 'email' not in updated_user or 'password' not in updated_user:
         return jsonify({'error': 'Campos incompletos'}), 400
+    
+    if 'photourl' not in updated_user:
+        updated_user['photourl'] = "https://discord-server-flask.vercel.app/images/default-image.jpg"
 
     with conn.cursor() as cursor:
-        cursor.execute('UPDATE tellmedam_user SET username = %s, email = %s, password = %s WHERE id = %s RETURNING *;',
-                       (updated_user['username'], updated_user['email'], updated_user['password'], user_id))
+        cursor.execute('UPDATE tellmedam_user SET username = %s, email = %s, password = %s, photourl = %s WHERE id = %s RETURNING *;',
+                       (updated_user['username'], updated_user['email'], updated_user['password'], updated_user['photourl'], user_id))
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT id, username, email, photourl FROM tellmedam_user WHERE username = %s OR email = %s;', (updated_user['username'], updated_user['email']))
