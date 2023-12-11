@@ -51,7 +51,7 @@ def create_user():
             return jsonify({'error': 'Ya existe un usuario con el mismo username o email'}), 400
 
     with conn.cursor() as cursor:
-        cursor.execute('INSERT INTO tellmedam_user (username, email, password, photourl) VALUES (%s, %s, %s) RETURNING *;',
+        cursor.execute('INSERT INTO tellmedam_user (username, email, password, photourl) VALUES (%s, %s, %s, %s) RETURNING *;',
                        (new_user['username'], new_user['email'], new_user['password'], "https://discord-server-flask.vercel.app/images/default-image.jpg"))
         created_user = cursor.fetchone()
 
