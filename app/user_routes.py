@@ -126,16 +126,33 @@ def delete_user(user_id):
 
     # Check id exists
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute('SELECT * FROM tellmedam_user WHERE id = %s;', (user_id,))
+        cursor.execute('SELECT id, username, email, photourl FROM tellmedam_user WHERE id = %s;', (user_id,))
         user = cursor.fetchone()
     if not user:
         return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Delete all messages from chats where idUser1 or idUser2 is user_id
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_message WHERE chatId IN (SELECT id FROM tellmedam_chat WHERE idUser1 = %s OR idUser2 = %s);', (user_id, user_id))
+
+    conn.commit()
+
+    # Delete all messages from user
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_message WHERE idSender = %s;', (user_id,))
+
+    conn.commit()
+
+    # Delete all chats from user
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_chat WHERE idUser1 = %s OR idUser2 = %s;', (user_id, user_id))
+
+    conn.commit()
 
     with conn.cursor() as cursor:
         cursor.execute('DELETE FROM tellmedam_user WHERE id = %s RETURNING *;', (user_id,))
-        deleted_user = cursor.fetchone()
 
     conn.commit()
     conn.close()
 
-    return jsonify(deleted_user)
+    return jsonify(user)

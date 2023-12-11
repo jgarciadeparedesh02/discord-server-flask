@@ -62,3 +62,59 @@ def create_chat():
     conn.commit()
     conn.close()
     return jsonify(created_chat)
+
+# Eliminar un chat por ID
+@app.route('/chats/<int:chat_id>', methods=['DELETE'])
+def delete_chat(chat_id):
+    conn = connect()
+
+    #comprobar si el chat existe
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE id = %s;', (chat_id,))
+        chat = cursor.fetchone()
+    if not chat:
+        return jsonify({'error': 'Chat no encontrado'}), 404
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE id = %s;', (chat_id,))
+        chat = cursor.fetchone()
+
+    #delete all messages from chat
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_message WHERE chatId = %s;', (chat_id,))
+
+    conn.commit()
+
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_chat WHERE id = %s;', (chat_id,))
+
+    conn.commit()
+    conn.close()
+    return jsonify(chat)
+
+
+# Vaciar un chat por id
+@app.route('/chats/<int:chat_id>/clean', methods=['DELETE'])
+def vaciar_chat(chat_id):
+    conn = connect()
+
+    #comprobar si el chat existe
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE id = %s;', (chat_id,))
+        chat = cursor.fetchone()
+    if not chat:
+        return jsonify({'error': 'Chat no encontrado'}), 404
+        
+    # Devolver el chat vaciado
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE id = %s;', (chat_id,))
+        chat = cursor.fetchone()
+
+    # Eliminar todos los mensajes del chat
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tellmedam_message WHERE chatId = %s;', (chat_id,))
+        
+    conn.commit()
+    conn.close()
+    
+    return jsonify(chat)
