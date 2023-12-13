@@ -16,7 +16,7 @@ db_config = {
 }
 
 pool = psycopg2.pool.SimpleConnectionPool( 
-    3, 20, **db_config)
+    3, 40, **db_config)
 
 def connect():
     #return psycopg2.connect(**db_config)
