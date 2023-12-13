@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 import psycopg2
+import psycopg2.pool 
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
@@ -14,5 +15,12 @@ db_config = {
     'sslmode': 'require'
 }
 
+pool = psycopg2.pool.SimpleConnectionPool( 
+    3, 20, **db_config)
+
 def connect():
-    return psycopg2.connect(**db_config)
+    #return psycopg2.connect(**db_config)
+    return pool.getconn()
+
+def disconnect(conn):
+    pool.putconn(conn)

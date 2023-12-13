@@ -1,7 +1,7 @@
 # app/chat_routes.py
 from flask import jsonify, request
 from psycopg2.extras import RealDictCursor
-from config import connect
+from config import connect, disconnect
 from app import app
 
 @app.route('/chats/<int:chat_id>/messages', methods=['GET'])
@@ -19,7 +19,7 @@ def get_chat_messages(chat_id):
         cursor.execute(query, (chat_id,))
         chat_messages = cursor.fetchall()
 
-    conn.close()
+    disconnect(conn)
 
     return jsonify(chat_messages)
 
@@ -50,6 +50,6 @@ def add_message(chat_id):
         cursor.execute('SELECT id, idSender, content, chatId FROM tellmedam_message WHERE chatId = %s and idSender = %s and content = %s;', (chat_id, id_sender, content))
         created_message = cursor.fetchone()
     conn.commit()
-    conn.close()
+    disconnect(conn)
 
     return jsonify(created_message)

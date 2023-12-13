@@ -1,7 +1,7 @@
 # app/user_routes.py
 from flask import jsonify, request
 from psycopg2.extras import RealDictCursor
-from config import connect
+from config import connect, disconnect
 from app import app
 import re
 
@@ -12,7 +12,7 @@ def get_users():
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT id, username, email, photourl FROM tellmedam_user;')
         users = cursor.fetchall()
-    conn.close()
+    disconnect(conn)
     return jsonify(users)
 
 # Obtener un usuario por ID
@@ -22,7 +22,7 @@ def get_user(user_id):
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT id, username, email, photourl FROM tellmedam_user WHERE id = %s;', (user_id,))
         user = cursor.fetchone()
-    conn.close()
+    disconnect(conn)
     return jsonify(user)
 
 # Crear un nuevo usuario
@@ -60,7 +60,7 @@ def create_user():
         created_user = cursor.fetchone()
 
     conn.commit()
-    conn.close()
+    disconnect(conn)
 
     return jsonify(created_user)
 
@@ -82,7 +82,7 @@ def get_user_chats(user_id):
         cursor.execute(query, (user_id, user_id))
         user_chats = cursor.fetchall()
 
-    conn.close()
+    disconnect(conn)
 
     return jsonify(user_chats)
 
@@ -115,7 +115,7 @@ def update_user(user_id):
         updated_user = cursor.fetchone()
 
     conn.commit()
-    conn.close()
+    disconnect(conn)
 
     return jsonify(updated_user)
 
@@ -153,6 +153,6 @@ def delete_user(user_id):
         cursor.execute('DELETE FROM tellmedam_user WHERE id = %s RETURNING *;', (user_id,))
 
     conn.commit()
-    conn.close()
+    disconnect(conn)
 
     return jsonify(user)

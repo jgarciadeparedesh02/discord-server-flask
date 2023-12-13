@@ -1,7 +1,7 @@
 # app/chat_routes.py
 from flask import jsonify, request
 from psycopg2.extras import RealDictCursor
-from config import connect
+from config import connect, disconnect
 from app import app
 
 # Obtener todos los chats
@@ -11,7 +11,7 @@ def get_chats():
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT * FROM tellmedam_chat;')
         chats = cursor.fetchall()
-    conn.close()
+    disconnect(conn)
     return jsonify(chats)
 
 # Obtener un chat por ID
@@ -21,7 +21,7 @@ def get_chat(chat_id):
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute('SELECT * FROM tellmedam_chat WHERE id = %s;', (chat_id,))
         chat = cursor.fetchone()
-    conn.close()
+    disconnect(conn)
     return jsonify(chat)
 
 # Crear un nuevo chat
@@ -43,6 +43,12 @@ def create_chat():
     if existing_chat:
         return jsonify({'error': 'Ya existe un chat entre estos dos usuarios'}), 400
 
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute('SELECT * FROM tellmedam_chat WHERE idUser1 = %s AND idUser2 = %s;', (new_chat['user2_id'], new_chat['user1_id']))
+        existing_chat = cursor.fetchone()
+    if existing_chat:
+        return jsonify({'error': 'Ya existe un chat entre estos dos usuarios'}), 400
+
     with conn.cursor() as cursor:
         cursor.execute('INSERT INTO tellmedam_chat (idUser1, idUser2) VALUES (%s, %s) RETURNING *;',
                        (new_chat['user1_id'], new_chat['user2_id']))
@@ -60,7 +66,7 @@ def create_chat():
         created_chat = cursor.fetchone()
 
     conn.commit()
-    conn.close()
+    disconnect(conn)
     return jsonify(created_chat)
 
 # Eliminar un chat por ID
@@ -89,7 +95,7 @@ def delete_chat(chat_id):
         cursor.execute('DELETE FROM tellmedam_chat WHERE id = %s;', (chat_id,))
 
     conn.commit()
-    conn.close()
+    disconnect(conn)
     return jsonify(chat)
 
 
@@ -115,6 +121,6 @@ def vaciar_chat(chat_id):
         cursor.execute('DELETE FROM tellmedam_message WHERE chatId = %s;', (chat_id,))
         
     conn.commit()
-    conn.close()
+    disconnect(conn)
     
     return jsonify(chat)

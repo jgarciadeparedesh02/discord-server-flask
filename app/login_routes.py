@@ -1,7 +1,7 @@
 # app/login_routes.py
 from flask import jsonify, request
 from psycopg2.extras import RealDictCursor
-from config import connect
+from config import connect, disconnect
 from app import app
 
 @app.route('/login', methods=['POST'])
@@ -20,6 +20,7 @@ def login():
                        (email, password))
         user = cursor.fetchone()
 
+        disconnect(conn)
         if user:
             return jsonify(user)
         else:
